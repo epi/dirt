@@ -29,10 +29,10 @@ void initializeMod(immutable(ModuleInfo)* mod)
 	ModuleReference *mr = findModuleReference(mod);
 	if (mr.initialized)
 		return;
-	foreach (m; mod.importedModules)
-		initializeMod(m);
-	shprint(" ");
-	shprint(mod.name);
+//	foreach (m; mod.importedModules)
+//		initializeMod(m);
+//	shprint(" ");
+//	shprint(mod.name);
 	mr.initialized = true;
 }
 

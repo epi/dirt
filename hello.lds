@@ -31,6 +31,7 @@ SECTIONS
 	.bss : {
 		_bstart = .;
 		*(.bss)
+		*(.bss*)
 		*(COMMON)
 		_bend = .;
 	} >sram

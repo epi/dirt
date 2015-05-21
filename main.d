@@ -51,5 +51,9 @@ void main()
 	shprint("Hello, world!\n");
 	shprintnum(0xdeadbeef, 16);
 	shprint("\n");
+	ulong a = cast(ulong) &Foo.z; //0xbadc0ffee0ddf00dUL;
+	writefln("foo %#050x", a);
+	writefln("bar %40x %*d", cast(ulong) &Foo.z, 15, 15);
+	writefln("baz %40s %d", 0xbddf00d12123123UL, 15);
 }
 

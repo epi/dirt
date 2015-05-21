@@ -6,11 +6,11 @@ LD=$(CROSS)ld
 GDC=$(CROSS)gdc
 QEMU=/opt/qemu/bin/qemu-system-arm
 
-DFLAGS := -Os -g -mcpu=cortex-m3 -mthumb -nostdinc -ffunction-sections -fdata-sections -fno-invariants -fmerge-constants -fno-rtti
+DFLAGS := -Os -g -mcpu=cortex-m3 -mthumb -nostdinc -ffunction-sections -fdata-sections -fno-invariants -fmerge-constants
 ASFLAGS := -g -mcpu=cortex-m3 -mthumb
 LDFLAGS := -nostdlib --gc-sections
 
-objs := start.o object.o libc.o sh.o main.o libd.o
+objs := start.o object.o libc.o sh.o main.o libd.o std/format.o std/traits.o std/typetuple.o
 asms := $(patsubst %.o,%.S,$(objs))
 
 hello.elf: $(objs) hello.lds

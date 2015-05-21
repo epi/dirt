@@ -1,5 +1,7 @@
 module sh;
 
+import std.format;
+
 extern(C) void shcmd(uint command, void* message)
 {
 	asm
@@ -21,6 +23,17 @@ extern(C) void shexit()
 void shprint(const(char)* txt)
 {
 	shcmd(0x04, cast(void*) txt);
+}
+
+void shprint(in char[] a)
+{
+	uint[3] message = [
+		2, // stderr
+		cast(uint) a.ptr,
+		cast(uint) a.length
+	];
+
+	shcmd(0x05, cast(void*) message.ptr);
 }
 
 void shprint(string a)
@@ -53,3 +66,38 @@ void shprintnum(uint x, uint base = 10)
 	shprint(buf.ptr + offs);
 }
 
+void shprint(T...)(T args)
+{
+	static if (args.length)
+		{}
+	else
+	{
+		shprint(args[0]);
+		shprint(args[1 .. $]);
+	}
+}
+
+void writef(T...)(T args)
+{
+	formattedWrite(SHWriter(), args);
+}
+
+void writefln(T...)(T args)
+{
+	writef(args);
+	shprint("\n");
+}
+
+struct SHWriter
+{
+}
+
+void put(SHWriter w, char c)
+{
+	shprint((&c)[0 .. 1]);
+}
+
+void put(SHWriter w, const(char)[] s)
+{
+	shprint(s);
+}
