@@ -46,20 +46,17 @@ uint formattedWrite(Writer, Char, A...)(Writer w, in Char[] fmt, A args)
 
 	auto spec = FormatSpec!Char(fmt);
 
-	FPfmt[A.length] funs;
-	const(void)*[A.length] argsAddresses;
-	if (!__ctfe)
+	FPfmt[cast(uint) A.length] funs;
+	const(void)*[cast(uint) A.length] argsAddresses;
+	foreach (i, Arg; A)
 	{
-		foreach (i, Arg; A)
-		{
-			funs[i] = ()@trusted{ return cast(FPfmt)&formatGeneric!(Writer, Arg, Char); }();
-			// We can safely cast away shared because all data is either
-			// immutable or completely owned by this function.
-			argsAddresses[i] = (ref arg)@trusted{ return cast(const void*) &arg; }(args[i]);
+		funs[i] = ()@trusted{ return cast(FPfmt)&formatGeneric!(Writer, Arg, Char); }();
+		// We can safely cast away shared because all data is either
+		// immutable or completely owned by this function.
+		argsAddresses[i] = (ref arg)@trusted{ return cast(const void*) &arg; }(args[i]);
 
-			// Reflect formatting @safe/pure ability of each arguments to this function
-			if (0) formatValue(w, args[i], spec);
-		}
+		// Reflect formatting @safe/pure ability of each arguments to this function
+		if (0) formatValue(w, args[i], spec);
 	}
 
 	// Are we already done with formats? Then just dump each parameter in turn
@@ -125,19 +122,13 @@ uint formattedWrite(Writer, Char, A...)(Writer w, in Char[] fmt, A args)
 			foreach (i; spec.indexStart - 1 .. spec.indexEnd)
 			{
 				if (funs.length <= i) break;
-				if (__ctfe)
-					formatNth(w, spec, i, args);
-				else
-					funs[i](w, argsAddresses[i], spec);
+				funs[i](w, argsAddresses[i], spec);
 			}
 			if (currentArg < spec.indexEnd) currentArg = spec.indexEnd;
 		}
 		else
 		{
-			if (__ctfe)
-				formatNth(w, spec, currentArg, args);
-			else
-				funs[currentArg](w, argsAddresses[currentArg], spec);
+			funs[currentArg](w, argsAddresses[currentArg], spec);
 			++currentArg;
 		}
 	}
@@ -169,45 +160,6 @@ private int getNthInt(A...)(uint index, A args)
 		enforceFmt(false, "int expected");
 	}
 	assert(0);
-}
-
-string to(S)(ulong a) if (is(S == string))
-{
-	if (a == 0)
-		return "0";
-	string result;
-	while (a)
-	{
-		char c = '0' + cast(char) (a % 10);
-		result = c ~ result;
-		a /= 10;
-	}
-	return result;
-}
-
-private void formatNth(Writer, Char, A...)(Writer w, ref FormatSpec!Char f, size_t index, A args)
-{
-	static string gencode(size_t count)()
-	{
-		string result;
-		foreach (n; 0 .. count)
-		{
-			auto num = to!string(n);
-			result ~=
-				"case "~num~":"~
-				"	formatValue(w, args["~num~"], f);"~
-				"	break;";
-		}
-		return result;
-	}
-
-	switch (index)
-	{
-		mixin(gencode!(A.length)());
-
-		default:
-			assert(0, "n = "~cast(char)(index + '0'));
-	}
 }
 
 /**
@@ -513,6 +465,59 @@ template hasToString(T, Char)
 }
 
 /**
+$(D bool)s are formatted as "true" or "false" with %s and as "1" or
+"0" with integral-specific format specs.
+
+Params:
+	w = The $(D OutputRange) to write to.
+	obj = The value to write.
+	f = The $(D FormatSpec) defining how to write the value.
+ */
+void formatValue(Writer, T, Char)(Writer w, T obj, ref FormatSpec!Char f)
+if (is(BooleanTypeOf!T) && !is(T == enum) && !hasToString!(T, Char))
+{
+	BooleanTypeOf!T val = obj;
+
+	if (f.spec == 's')
+	{
+		string s = val ? "true" : "false";
+		if (!f.flDash)
+		{
+			// right align
+			if (f.width > s.length)
+				foreach (i ; 0 .. f.width - s.length) put(w, ' ');
+			put(w, s);
+		}
+		else
+		{
+			// left align
+			put(w, s);
+			if (f.width > s.length)
+				foreach (i ; 0 .. f.width - s.length) put(w, ' ');
+		}
+	}
+	else
+		formatValue(w, cast(int) val, f);
+}
+
+/**
+$(D null) literal is formatted as $(D "null").
+
+Params:
+	w = The $(D OutputRange) to write to.
+	obj = The value to write.
+	f = The $(D FormatSpec) defining how to write the value.
+ */
+void formatValue(Writer, T, Char)(Writer w, T obj, ref FormatSpec!Char f)
+if (is(Unqual!T == typeof(null)) && !is(T == enum) && !hasToString!(T, Char))
+{
+	enforceFmt(f.spec == 's',
+		"null");
+
+	put(w, "null");
+}
+
+/**
 Integrals are formatted like $(D printf) does.
 
 Params:
@@ -563,17 +568,6 @@ if (is(IntegralTypeOf!T) && !is(T == enum) && !hasToString!(T, Char))
 		formatIntegral(w, cast( long) val, f, base, Unsigned!U.max);
 	else
 		formatIntegral(w, cast(ulong) val, f, base, U.max);
-}
-
-///
-unittest
-{
-	import std.array : appender;
-	auto w = appender!string();
-	auto spec = singleSpec("%d");
-	formatValue(w, 1337, spec);
-
-	assert(w.data == "1337");
 }
 
 private void divmod6432(ulong u, uint v, out ulong q, out uint r)

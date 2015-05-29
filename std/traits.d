@@ -26,6 +26,44 @@ template SignedTypeOf(T)
         static assert(0, T.stringof~" is not an signed type.");
 }
 
+template BooleanTypeOf(T)
+{
+    static if (is(AliasThisTypeOf!T AT) && !is(AT[] == AT))
+        alias X = BooleanTypeOf!AT;
+    else
+        alias X = OriginalType!T;
+
+    static if (is(Unqual!X == bool))
+    {
+        alias BooleanTypeOf = X;
+    }
+    else
+        static assert(0, T.stringof~" is not boolean type");
+}
+
+/*
+Always returns the Dynamic Array version.
+ */
+template StringTypeOf(T)
+{
+    static if (is(T == typeof(null)))
+    {
+        // It is impossible to determine exact string type from typeof(null) -
+        // it means that StringTypeOf!(typeof(null)) is undefined.
+        // Then this behavior is convenient for template constraint.
+        static assert(0, T.stringof~" is not a string type");
+    }
+    else static if (is(T : const char[]) || is(T : const wchar[]) || is(T : const dchar[]))
+    {
+        static if (is(T : U[], U))
+            alias StringTypeOf = U[];
+        else
+            static assert(0);
+    }
+    else
+        static assert(0, T.stringof~" is not a string type");
+}
+
 template Unqual(T)
 {
     version (none) // Error: recursive alias declaration @@@BUG1308@@@

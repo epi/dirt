@@ -55,5 +55,6 @@ void main()
 	writefln("foo %#050x", a);
 	writefln("bar %40x %*d", cast(ulong) &Foo.z, 15, 15);
 	writefln("baz %40s %d", 0xbddf00d12123123UL, 15);
+	writefln("quux %40s %d %10b %s %s %d %d %s", 0xbddf00d12123123UL, 15, 20, true, false, true, false, null);
 }
 
