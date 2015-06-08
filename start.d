@@ -84,7 +84,3 @@ private extern(C) void resetISR()
 	_d_run_main(0, null, null);
 	shexit();
 }
-
-extern(C) void __aeabi_unwind_cpp_pr1() { for (;;) {} }
-extern(C) void __aeabi_unwind_cpp_pr0() { for (;;) {} }
-

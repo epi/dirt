@@ -1,12 +1,14 @@
-#CROSS=/opt/arm-gdcproject-linux-gnueabihf/bin/arm-gdcproject-linux-gnueabihf-
 CROSS=/opt/arm-none-eabi/bin/arm-none-eabi-
 
 AS=$(CROSS)as
 LD=$(CROSS)ld
-GDC=$(CROSS)gdc
+DC=$(CROSS)gdc
+CC=$(CROSS)gcc
 QEMU=/opt/qemu/bin/qemu-system-arm
 
-DFLAGS := -Os -g -mcpu=cortex-m3 -mthumb -nostdinc -ffunction-sections -fdata-sections -fno-invariants -fmerge-constants
+libgcc_a := $(shell $(CC) -print-libgcc-file-name)
+
+DFLAGS := -Os -g -mcpu=cortex-m3 -mthumb -nophoboslib -frelease -finline -ffunction-sections -fdata-sections -fno-invariants -fmerge-constants -fno-emit-moduleinfo
 ASFLAGS := -g -mcpu=cortex-m3 -mthumb
 LDFLAGS := -nostdlib --gc-sections
 
@@ -14,14 +16,14 @@ objs := start.o object.o libc.o sh.o main.o libd.o std/format.o std/traits.o std
 asms := $(patsubst %.o,%.S,$(objs))
 
 hello.elf: $(objs) hello.lds
-	$(LD) $(objs) -T hello.lds -o $@ $(LDFLAGS)
+	$(LD) $(objs) $(libgcc_a) -T hello.lds -o $@ $(LDFLAGS)
 
 main.o: object.d __entrypoint.d
 
 .SECONDARY: $(asms)
 
 %.S: %.d
-	$(GDC) $(DFLAGS) -S -c $< -o $@
+	$(DC) $(DFLAGS) -S -c $< -o $@
 
 %.o: %.S
 	$(AS) $(ASFLAGS) $< -o $@

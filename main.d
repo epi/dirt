@@ -46,15 +46,27 @@ class Bar : Foo
 	override string name() { return "bar"; }
 }
 
+__gshared ubyte[100] _currentexception;
+
 void main()
 {
 	shprint("Hello, world!\n");
 	shprintnum(0xdeadbeef, 16);
 	shprint("\n");
 	ulong a = cast(ulong) &Foo.z; //0xbadc0ffee0ddf00dUL;
+	scope(exit) writefln("exiting");
+	scope(success) writefln("success");
 	writefln("foo %#050x", a);
 	writefln("bar %40x %*d", cast(ulong) &Foo.z, 15, 15);
 	writefln("baz %40s %d", 0xbddf00d12123123UL, 15);
 	writefln("quux %40s %d %10b %s %s %d %d %s", 0xbddf00d12123123UL, 15, 20, true, false, true, false, null);
+
+	Throwable t = cast(Throwable) (_currentexception.ptr);
+//	try {
+//		throw t; //new Throwable("dupa");
+//	}
+//	catch (Throwable e)
+//	{
+//	}
 }
 

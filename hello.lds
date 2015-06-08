@@ -19,10 +19,17 @@ SECTIONS
 		*(.rodata)
 		*(.rodata*)
 		*(.data*ModuleInfo*)
-		_etext = . ;
 	} >flash
 
-	.data : AT ( ADDR (.text) + SIZEOF (.text) ) {
+  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >flash
+   PROVIDE_HIDDEN (__exidx_start = .);
+  .ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) } >flash
+   PROVIDE_HIDDEN (__exidx_end = .);
+  .eh_frame_hdr : { *(.eh_frame_hdr) } >flash
+  .eh_frame       : ONLY_IF_RO { KEEP (*(.eh_frame)) } >flash
+		_etext = . ;
+
+	.data : AT ( _etext ) {
 		_data = .;
 		*(.data)
 		*(.data*)
@@ -36,7 +43,5 @@ SECTIONS
 		_bend = .;
 	} >sram
 	/DISCARD/ : {
-		*(.ARM.exidx*)
-		*(.ARM.extab*)
 	}
 }

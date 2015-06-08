@@ -67,6 +67,11 @@ class TypeInfo_Array : TypeInfo
 	TypeInfo value;
 }
 
+class TypeInfo_StaticArray : TypeInfo
+{
+	ubyte[8] foo;
+}
+
 class TypeInfo_Pointer : TypeInfo
 {
 	TypeInfo m_next;
@@ -286,3 +291,77 @@ struct ModuleReference
 }
 
 extern (C) __gshared ModuleReference* _Dmodule_ref;   // start of linked list
+
+class Throwable : Object
+{
+	interface TraceInfo
+	{
+		int opApply(scope int delegate(ref const(char[]))) const;
+		int opApply(scope int delegate(ref size_t, ref const(char[]))) const;
+		string toString() const;
+	}
+
+	string      msg;    /// A message describing the error.
+
+	/**
+	 * The _file name and line number of the D source code corresponding with
+	 * where the error was thrown from.
+	 */
+	string      file;
+	size_t      line;   /// ditto
+
+	/**
+	 * The stack trace of where the error happened. This is an opaque object
+	 * that can either be converted to $(D string), or iterated over with $(D
+	 * foreach) to extract the items in the stack trace (as strings).
+	 */
+	TraceInfo   info;
+
+	/**
+	 * A reference to the _next error in the list. This is used when a new
+	 * $(D Throwable) is thrown from inside a $(D catch) block. The originally
+	 * caught $(D Exception) will be chained to the new $(D Throwable) via this
+	 * field.
+	 */
+	Throwable   next;
+
+	@safe pure nothrow this(string msg, Throwable next = null)
+	{
+		this.msg = msg;
+		this.next = next;
+		//this.info = _d_traceContext();
+	}
+
+	@safe pure nothrow this(string msg, string file, size_t line, Throwable next = null)
+	{
+		this(msg, next);
+		this.file = file;
+		this.line = line;
+		//this.info = _d_traceContext();
+	}
+
+	/**
+	 * Overrides $(D Object.toString) and returns the error message.
+	 * Internally this forwards to the $(D toString) overload that
+	 * takes a $(PARAM sink) delegate.
+	 */
+	override string toString()
+	{
+		return "";
+	}
+
+	/**
+	 * The Throwable hierarchy uses a toString overload that takes a
+	 * $(PARAM sink) delegate to avoid GC allocations, which cannot be
+	 * performed in certain error situations.  Override this $(D
+	 * toString) method to customize the error message.
+	 */
+	void toString(scope void delegate(in char[]) sink) const
+	{
+		sink(typeid(this).name);
+		if (msg.length)
+		{
+			sink(": "); sink(msg);
+		}
+	}
+}
